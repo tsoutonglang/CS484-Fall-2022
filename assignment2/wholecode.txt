@@ -1,0 +1,148 @@
+`
+import matplotlib.pyplot as plt
+import numpy
+import sklearn.cluster as cluster
+import sklearn.metrics as metrics
+import pandas
+
+df_features = pandas.read_csv('C:\\Users\\anett\\CS 484\\Assignment2\\twoFeatures.csv', delimiter=',')
+
+
+print(df_features['x1'].describe())
+#Scaling x1
+OR_1 = df_features['x1'].max() - df_features['x1'].min()
+NR_1 = (10-0)
+df_features['x1_scaled'] = (((df_features['x1'] - df_features['x1'].min()) * NR_1) / OR_1) + 0
+print(df_features['x2'].describe())
+print("--------")
+print(df_features['x1_scaled'].describe())
+
+#Scaling x2
+OR_2 = df_features['x2'].max() - df_features['x2'].min()
+NR_2 = (10-0)
+df_features['x2_scaled'] = (((df_features['x2'] - df_features['x2'].min()) * NR_2) / OR_2) + 0
+df_features
+
+
+##############################################################################
+"Helper Function Manhattan Method"
+
+def manhattanDis (df, cluster_num, iterations = 500):
+    X = df.to_numpy()
+    #X = df
+    nVar = df.shape[1]
+    centroid = X[range(cluster_num), :]
+    member_p = numpy.zeros(df.shape[0])
+
+    for iter in range(iterations):
+        distance = metrics.pairwise.manhattan_distances(X, centroid)
+        member = numpy.argmin(distance, axis = 1)
+        wc_distance = numpy.min(distance, axis = 1)
+
+        centroid = numpy.full((cluster_num, nVar), 0.0)
+        for c in range(cluster_num):
+            inCluster = (member == c)
+            if (numpy.sum(inCluster) > 0):
+                centroid[c,:] = numpy.mean(X[inCluster,], axis = 0)
+
+        member_diff = numpy.sum(numpy.abs(member - member_p))
+        if (member_diff > 0):
+            member_p = member
+        else:
+            break
+            
+    return (member, centroid, wc_distance)
+
+
+#####################################################################
+
+import matplotlib.pyplot as plt
+import numpy
+import sklearn.cluster as cluster
+import sklearn.metrics as metrics
+import pandas
+
+#DistanceFromChicago = pandas.read_csv('..\Downloads\DistanceFromChicago.csv',
+ #                     delimiter=',', index_col='CityState')
+
+#x2Count = df_features.shape[0]
+
+# nCity = DistanceFromChicago.shape[0]
+
+# trainData = numpy.reshape(numpy.asarray(DistanceFromChicago['DrivingMilesFromChicago']), (nCity, 1))
+
+trainData = pandas.read_csv('C:\\Users\\anett\\CS 484\\Assignment2\\twoFeatures.csv', delimiter=',')
+
+
+# Determine the number of clusters
+maxNClusters = 8
+
+nClusters = numpy.zeros(maxNClusters)
+Elbow = numpy.zeros(maxNClusters)
+Silhouette = numpy.zeros(maxNClusters)
+Calinski_Harabasz = numpy.zeros(maxNClusters)
+Davies_Bouldin = numpy.zeros(maxNClusters)
+TotalWCSS = numpy.zeros(maxNClusters)
+Inertia = numpy.zeros(maxNClusters)
+
+for c in range(maxNClusters):
+    KClusters = c + 1
+    nClusters[c] = KClusters
+    
+    #implement manhattan distance here
+    (memb, cent, wcd) = manhattanDis(trainData, KClusters)
+    wcss = wcd * wcd
+    
+    #kmeans.fit(1, trainData)
+    kmeans.fit(trainData)
+    print(kmeans.labels_)
+
+   # The Inertia value is the within cluster sum of squares deviation from the centroid
+    WCSS = numpy.zeros(KClusters)
+    nC = numpy.zeros(KClusters)
+        
+
+    TotalWCSS[c] = 0
+    Elbow[c] = 0
+    for k in range(KClusters):
+        nC[k] = numpy.sum(numpy.where(memb == k, 1, 0))
+        WCSS[k] = numpy.sum(numpy.where(memb == k, wcss, 0.0))
+        Elbow[c] += WCSS[k] / nC[k]
+        TotalWCSS[c] += WCSS[k]
+
+df_TW = pandas.DataFrame(data = range(1,9), columns = (['# of Clusters']))
+df_TW['TWCSS'] = TotalWCSS
+print(df_TW)
+
+print('\n')
+
+df_EV = pandas.DataFrame(data = range(1,9), columns = (['# of Clusters']))
+df_EV['Elbow Value'] = Elbow
+print(df_EV)
+
+plt.plot(nClusters, TotalWCSS, linewidth = 2, marker = 'o')
+plt.grid(True)
+plt.xlabel("Number of Clusters")
+plt.ylabel("Total WCSS")
+plt.xticks(numpy.arange(1, maxNClusters+1, step = 1))
+plt.show()
+
+plt.plot(nClusters, Elbow, linewidth = 2, marker = 'o')
+plt.grid(True)
+plt.xlabel("Number of Clusters")
+plt.ylabel("Elbow Value")
+plt.xticks(numpy.arange(1, maxNClusters+1, step = 1))
+plt.show()
+
+# Display the 4-cluster solution
+kmeans = cluster.KMeans(n_clusters=4, random_state=0).fit(trainData)
+
+print("Cluster Centroids = \n", kmeans.cluster_centers_)
+
+# ClusterResult = DistanceFromChicago
+# ClusterResult['ClusterLabel'] = kmeans.labels_
+
+cmap = ['indianred','sandybrown','royalblue', 'olivedrab']
+# for c in range(4):
+#     subData = DistanceFromChicago[kmeans.labels_ == c]
+#     plt.hist(subData['DrivingMilesFromChicago'], color = cmap[c], label = str(c), linewidth = 2, his
